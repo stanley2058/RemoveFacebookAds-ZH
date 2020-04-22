@@ -2,7 +2,7 @@
 // @name         Remove Facebook Ad Posts
 // @version      1
 // @author       STW
-// @match        https://www.facebook.com/
+// @match        https://www.facebook.com/*
 // ==/UserScript==
 
 unsafeWindow.deletedPost = [];
