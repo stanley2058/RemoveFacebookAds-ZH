@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1
+// @version      1.1
 // @author       STW
 // @match        https://www.facebook.com/*
 // ==/UserScript==
@@ -8,12 +8,22 @@
 unsafeWindow.deletedPost = [];
 unsafeWindow.deletedPostOwner = [];
 
+// Change the threshold to match your desire, -1 will remove all ads.
+const threshold = 1000;
+
 setInterval(() => {
     Array.from(document.querySelectorAll('div')).filter(d => d.getAttribute('role') === 'article').forEach(div => {
         if (Array.from(div.querySelectorAll('a')).filter(a => a.getAttribute('role') === 'button').filter(a => a.innerText === '贊助').length === 1) {
-            unsafeWindow.deletedPost.push(div.innerHTML);
-            unsafeWindow.deletedPostOwner.push({name: div.querySelector('h5 a').innerText, url: div.querySelector('h5 a').href});
-            div.innerHTML = '';
+            const reactArr = Array.from(div.querySelectorAll('a')).filter(a => a.getAttribute('role') === 'button')
+                               .map(a => Array.from(a.querySelectorAll('span'))).flat()
+                               .filter(span => span.getAttribute('data-hover') === 'tooltip' && span.classList.length === 0 && span.id === '')
+                               .map(span => span.innerText);
+
+            if (threshold === -1 || reactArr.length === 0 || parseInt(reactArr[0].replace(/,/g, '')) <= threshold) {
+                unsafeWindow.deletedPost.push(div.innerHTML);
+                unsafeWindow.deletedPostOwner.push({name: div.querySelector('h5 a').innerText, url: div.querySelector('h5 a').href});
+                div.innerHTML = '';
+            }
         }
     });
 }, 1000);
