@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.1
+// @version      1.2
 // @author       STW
 // @match        https://www.facebook.com/*
 // ==/UserScript==
@@ -9,11 +9,11 @@ unsafeWindow.deletedPost = [];
 unsafeWindow.deletedPostOwner = [];
 
 // Change the threshold to match your desire, -1 will remove all ads.
-const threshold = 1000;
+const threshold = 3000;
 
 setInterval(() => {
     Array.from(document.querySelectorAll('div')).filter(d => d.getAttribute('role') === 'article').forEach(div => {
-        if (Array.from(div.querySelectorAll('a')).filter(a => a.getAttribute('role') === 'button').filter(a => a.innerText === '贊助').length === 1) {
+        if (Array.from(div.querySelectorAll('a')).filter(a => a.getAttribute('role') === 'button').filter(a => a.innerText.includes('贊助')).length === 1) {
             const reactArr = Array.from(div.querySelectorAll('a')).filter(a => a.getAttribute('role') === 'button')
                                .map(a => Array.from(a.querySelectorAll('span'))).flat()
                                .filter(span => span.getAttribute('data-hover') === 'tooltip' && span.classList.length === 0 && span.id === '')
