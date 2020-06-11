@@ -1,17 +1,25 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.2
+// @version      1.3
 // @author       STW
 // @match        https://www.facebook.com/*
+// @require      https://unpkg.com/rxjs/bundles/rxjs.umd.min.js
 // ==/UserScript==
-
-unsafeWindow.deletedPost = [];
-unsafeWindow.deletedPostOwner = [];
 
 // Change the threshold to match your desire, -1 will remove all ads.
 const threshold = 3000;
 
-setInterval(() => {
+/* Change Log
+1.3 - Use rxjs to reduce resource usage while idle.
+*/
+
+const { fromEvent } = rxjs;
+const { throttleTime } = rxjs.operators;
+
+unsafeWindow.deletedPost = [];
+unsafeWindow.deletedPostOwner = [];
+
+fromEvent(window, 'scroll').pipe(throttleTime(300)).subscribe(next => {
     Array.from(document.querySelectorAll('div')).filter(d => d.getAttribute('role') === 'article').forEach(div => {
         if (Array.from(div.querySelectorAll('a')).filter(a => a.getAttribute('role') === 'button').filter(a => a.innerText.includes('贊助')).length === 1) {
             const reactArr = Array.from(div.querySelectorAll('a')).filter(a => a.getAttribute('role') === 'button')
@@ -26,11 +34,11 @@ setInterval(() => {
             }
         }
     });
-}, 1000);
+})
 
-unsafeWindow.showDeletedPosts = function() {
+unsafeWindow.AD_ShowDeletedPosts = function() {
     for (let i = 0; i < unsafeWindow.deletedPostOwner.length; ++i) console.log(`${i}: ${unsafeWindow.deletedPostOwner[i].name}\n${unsafeWindow.deletedPostOwner[i].url}`);
 }
-unsafeWindow.showFullPostByIndex = function(index) {
+unsafeWindow.AD_ShowFullPostByIndex = function(index) {
     console.log(unsafeWindow.deletedPost[index]);
 }
