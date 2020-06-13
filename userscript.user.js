@@ -6,6 +6,7 @@
 // @require      https://unpkg.com/rxjs/bundles/rxjs.umd.min.js
 // ==/UserScript==
 
+// Gist Url: https://gist.github.com/stanley2058/970e49b0d2295be290d5793e367c46fc
 // Change the threshold to match your desire, -1 will remove all ads.
 const threshold = 3000;
 
