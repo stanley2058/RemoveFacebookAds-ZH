@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.3
+// @version      1.4
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/rxjs/bundles/rxjs.umd.min.js
@@ -11,6 +11,7 @@
 const threshold = 3000;
 
 /* Change Log
+1.4 - Optimize algorithm, fixing ad not being removed.
 1.3 - Use rxjs to reduce resource usage while idle.
 */
 
@@ -21,18 +22,12 @@ unsafeWindow.deletedPost = [];
 unsafeWindow.deletedPostOwner = [];
 
 fromEvent(window, 'scroll').pipe(throttleTime(300)).subscribe(next => {
-    Array.from(document.querySelectorAll('div')).filter(d => d.getAttribute('role') === 'article').forEach(div => {
-        if (Array.from(div.querySelectorAll('a')).filter(a => a.getAttribute('role') === 'button').filter(a => a.innerText.includes('贊助')).length === 1) {
-            const reactArr = Array.from(div.querySelectorAll('a')).filter(a => a.getAttribute('role') === 'button')
-                               .map(a => Array.from(a.querySelectorAll('span'))).flat()
-                               .filter(span => span.getAttribute('data-hover') === 'tooltip' && span.classList.length === 0 && span.id === '')
-                               .map(span => span.innerText);
-
-            if (threshold === -1 || reactArr.length === 0 || parseInt(reactArr[0].replace(/,/g, '')) <= threshold) {
-                unsafeWindow.deletedPost.push(div.innerHTML);
-                unsafeWindow.deletedPostOwner.push({name: div.querySelector('h5 a').innerText, url: div.querySelector('h5 a').href});
-                div.innerHTML = '';
-            }
+    [...document.querySelector('div[role="feed"]').querySelectorAll('div[role="article"]')].filter(div => div.innerText.includes("贊助")).forEach(div => {
+        const socialNum = Math.max(...[...div.querySelectorAll('span[data-hover="tooltip"]')].map(span => parseInt(span.innerText.replace(/,/g, '').trim())).filter(num => isFinite(num)));
+        if (threshold === -1 || socialNum < threshold) {
+            unsafeWindow.deletedPost.push(div.innerHTML);
+            unsafeWindow.deletedPostOwner.push({name: div.querySelector('h5 a').innerText, url: div.querySelector('h5 a').href});
+            div.innerHTML = '';
         }
     });
 })
