@@ -14,6 +14,7 @@
 const threshold = 1000;
 
 /* Change Log
+1.7 - Fix for new FB UI.
 1.6 - Fix FB localStorage getting clear.
 1.5 - Add block button, help msg, AD origin highlight.
 1.4 - Optimize algorithm, fixing ad not being removed.
