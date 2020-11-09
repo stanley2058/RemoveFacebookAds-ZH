@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.6
+// @version      1.7
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/rxjs/bundles/rxjs.umd.min.js
@@ -41,17 +41,24 @@ unsafeWindow.AD_Block = function(name) {
 }
 
 fromEvent(window, 'scroll').pipe(throttleTime(300)).subscribe(next => {
-    [...document.querySelector('div').querySelectorAll('div[role="article"]')].filter(div => div.innerText.includes("贊助")).forEach(div => {
-        const socialNum = Math.max(...[...div.querySelectorAll('span[data-hover="tooltip"]')].map(span => parseInt(span.innerText.replace(/,/g, '').trim())).filter(num => isFinite(num)));
-        const name = div.querySelector('h5 a').innerText;
+    [...document.querySelector('div').querySelectorAll('div[role="article"]')].filter(div => {
+        const list = [...div.querySelectorAll("span > a")];
+        for (const a of list) {
+            const attr = a.getAttribute("aria-label");
+            if (attr && attr.includes("贊助")) return true;
+        }
+        return false;
+    }).forEach(div => {
+        const socialNum = Math.max(...[...div.querySelectorAll("div[role='button'] > span")].map(e => parseInt(e.innerText)).filter(n => isFinite(n)));
+        const name = div.querySelector('h4 a').innerText;
         if (threshold === -1 || isNaN(socialNum) || socialNum < threshold || blockList.includes(name)) {
             unsafeWindow.deletedPost.push(div.innerHTML);
-            unsafeWindow.deletedPostOwner.push({name, url: div.querySelector('h5 a').href});
+            unsafeWindow.deletedPostOwner.push({name, url: div.querySelector('h4 a').href});
             div.innerHTML = '';
         } else {
             if (!div.querySelector('button[name="blockBtn"]')) {
-                div.querySelector("h5 a").style.backgroundColor = "orangered";
-                div.querySelector('h5').innerHTML += `<button name='blockBtn' style='position:absolute;right:50px;background-color:wheat;color:navy;' onclick="AD_Block('${name}')">Block</button>`;
+                div.querySelector("h4 a").style.backgroundColor = "orangered";
+                div.querySelector('h4').innerHTML += `<button name='blockBtn' style='position:absolute;right:50px;background-color:wheat;color:navy;' onclick="AD_Block('${name}')">Block</button>`;
             }
         }
     });
