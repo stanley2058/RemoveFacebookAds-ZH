@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.7
+// @version      1.8
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/rxjs/bundles/rxjs.umd.min.js
@@ -14,6 +14,7 @@
 const threshold = 1000;
 
 /* Change Log
+1.8 - Remove top right sponser div.
 1.7 - Fix for new FB UI.
 1.6 - Fix FB localStorage getting clear.
 1.5 - Add block button, help msg, AD origin highlight.
@@ -63,7 +64,12 @@ fromEvent(window, 'scroll').pipe(throttleTime(300)).subscribe(next => {
             }
         }
     });
-})
+});
+
+fromEvent(window, "load").subscribe(next => {
+    const sponser_div = document.querySelectorAll("div[data-pagelet='RightRail'] > div > div")[0];
+    if (!sponser_div.getAttribute("class")) sponser_div.innerHTML = "";
+});
 
 unsafeWindow.AD_Help = function() {
     console.log('%cFacebook AD Post Blocker', 'color: yellow; background-color: navy; font-size: 24pt;');
