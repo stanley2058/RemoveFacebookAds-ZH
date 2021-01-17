@@ -64,9 +64,7 @@ fromEvent(window, 'scroll').pipe(throttleTime(300)).subscribe(next => {
             }
         }
     });
-});
 
-fromEvent(window, "load").subscribe(next => {
     const sponser_div = document.querySelectorAll("div[data-pagelet='RightRail'] > div > div")[0];
     if (!sponser_div.getAttribute("class")) sponser_div.innerHTML = "";
 });
