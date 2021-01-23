@@ -65,8 +65,8 @@ fromEvent(window, 'scroll').pipe(throttleTime(300)).subscribe(next => {
         }
     });
 
-    const sponser_div = document.querySelectorAll("div[data-pagelet='RightRail'] > div > div")[0];
-    if (!sponser_div.getAttribute("class")) sponser_div.innerHTML = "";
+    const sponser_div = document.querySelectorAll("div[data-pagelet='RightRail'] > div")[0];
+    if (sponser_div.innerText.includes("贊助")) sponser_div.innerHTML = "";
 });
 
 unsafeWindow.AD_Help = function() {
