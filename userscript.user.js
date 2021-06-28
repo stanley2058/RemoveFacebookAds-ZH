@@ -28,7 +28,7 @@ const threshold = 1000;
 const { fromEvent, interval, timer } = rxjs;
 const { throttleTime, takeUntil } = rxjs.operators;
 
-unsafeWindow.AD_Version = "1.9";
+unsafeWindow.AD_Version = "1.9.1";
 
 unsafeWindow.deletedPost = [];
 unsafeWindow.deletedPostOwner = [];
