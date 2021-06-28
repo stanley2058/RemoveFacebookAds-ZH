@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.9
+// @version      1.9.1
 // @author       STW
 // @match        https://www.facebook.com/*
-// @require      https://unpkg.com/rxjs/bundles/rxjs.umd.min.js
+// @require      https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.min.js
 // @icon         https://www.google.com/s2/favicons?domain=facebook.com.tw
 // @grant   GM_getValue
 // @grant   GM_setValue
@@ -15,13 +15,14 @@
 const threshold = 1000;
 
 /* Change Log
-1.9 - Auto remove ADs in the first 2 seconds after page load.
-1.8 - Remove top right sponser div.
-1.7 - Fix for new FB UI.
-1.6 - Fix FB localStorage getting clear.
-1.5 - Add block button, help msg, AD origin highlight.
-1.4 - Optimize algorithm, fixing ad not being removed.
-1.3 - Use rxjs to reduce resource usage while idle.
+1.9.1 - Update unpkg url.
+1.9.0 - Auto remove ADs in the first 2 seconds after page load.
+1.8   - Remove top right sponser div.
+1.7   - Fix for new FB UI.
+1.6   - Fix FB localStorage getting clear.
+1.5   - Add block button, help msg, AD origin highlight.
+1.4   - Optimize algorithm, fixing ad not being removed.
+1.3   - Use rxjs to reduce resource usage while idle.
 */
 
 const { fromEvent, interval, timer } = rxjs;
