@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.8
+// @version      1.9
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/rxjs/bundles/rxjs.umd.min.js
+// @icon         https://www.google.com/s2/favicons?domain=facebook.com.tw
 // @grant   GM_getValue
 // @grant   GM_setValue
 // @grant   GM_deleteValue
@@ -14,6 +15,7 @@
 const threshold = 1000;
 
 /* Change Log
+1.9 - Auto remove ADs in the first 2 seconds after page load.
 1.8 - Remove top right sponser div.
 1.7 - Fix for new FB UI.
 1.6 - Fix FB localStorage getting clear.
@@ -22,10 +24,10 @@ const threshold = 1000;
 1.3 - Use rxjs to reduce resource usage while idle.
 */
 
-const { fromEvent } = rxjs;
-const { throttleTime } = rxjs.operators;
+const { fromEvent, interval, timer } = rxjs;
+const { throttleTime, takeUntil } = rxjs.operators;
 
-unsafeWindow.AD_Version = "1.8";
+unsafeWindow.AD_Version = "1.9";
 
 unsafeWindow.deletedPost = [];
 unsafeWindow.deletedPostOwner = [];
@@ -37,12 +39,12 @@ let blockList = [];
     if (item) blockList = JSON.parse(item);
 })();
 
-unsafeWindow.AD_Block = function(name) {
+unsafeWindow.AD_Block = (name) => {
     blockList.push(name);
     GM_setValue("AD_BlockList", JSON.stringify(blockList));
 }
 
-fromEvent(window, 'scroll').pipe(throttleTime(300)).subscribe(next => {
+const deleteAd = () => {
     [...document.querySelector('div').querySelectorAll('div[role="article"]')].filter(div => {
         const list = [...div.querySelectorAll("span > a")];
         for (const a of list) {
@@ -67,9 +69,12 @@ fromEvent(window, 'scroll').pipe(throttleTime(300)).subscribe(next => {
 
     const sponser_div = document.querySelectorAll("div[data-pagelet='RightRail'] > div")[0];
     if (sponser_div.innerText.includes("贊助")) sponser_div.innerHTML = "";
-});
+}
 
-unsafeWindow.AD_Help = function() {
+fromEvent(window, 'scroll').pipe(throttleTime(300)).subscribe(next => deleteAd());
+interval(50).pipe(takeUntil(timer(2000))).subscribe(next => deleteAd());
+
+unsafeWindow.AD_Help = () => {
     console.log('%cFacebook AD Post Blocker', 'color: yellow; background-color: navy; font-size: 24pt;');
     console.log(`%cCurrent Version: ${AD_Version}`, 'color: cyan; background-color: navy; font-size: 12pt;');
     console.log('%cCheck Update: https://gist.github.com/stanley2058/970e49b0d2295be290d5793e367c46fc', 'color: cyan; background-color: navy; font-size: 12pt;');
@@ -83,16 +88,16 @@ unsafeWindow.AD_Help = function() {
     console.log(blockList)
 }
 
-unsafeWindow.AD_ShowDeletedPosts = function() {
+unsafeWindow.AD_ShowDeletedPosts = () => {
     for (let i = 0; i < unsafeWindow.deletedPostOwner.length; ++i) console.log(`${i}: ${unsafeWindow.deletedPostOwner[i].name}\n${unsafeWindow.deletedPostOwner[i].url}`);
 }
-unsafeWindow.AD_ShowFullPostByIndex = function(index) {
+unsafeWindow.AD_ShowFullPostByIndex = (index) => {
     console.log(unsafeWindow.deletedPost[index]);
 }
-unsafeWindow.AD_ClearBlockList = function() {
+unsafeWindow.AD_ClearBlockList = () => {
     GM_deleteValue('AD_BlockList');
 }
-unsafeWindow.AD_UnBlock = function(name) {
+unsafeWindow.AD_UnBlock = (name) => {
     blockList = blockList.filter(n => n !== name);
     GM_setValue("AD_BlockList", JSON.stringify(blockList));
 }
