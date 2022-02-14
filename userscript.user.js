@@ -67,9 +67,13 @@ const deleteAd = () => {
                         const selectBtn = [...d.querySelectorAll("div[role='button'][tabindex='0'] > span[dir='auto']")].find(e => e.innerText.includes("最相關"))
                         if (selectBtn) {
                             selectBtn.click();
-                            setTimeout(() => {
-                                document.querySelectorAll("div[tabindex='-1'] div[aria-hidden='false'] div[role='menuitem']")[2].click();
-                            }, 0);
+                            const timer2 = setInterval(() => {
+                                const allCommentBtn = [...document.querySelectorAll("div[tabindex='-1'] div[aria-hidden='false'] div[role='menuitem']")][2];
+                                if (allCommentBtn) {
+                                    allCommentBtn.click();
+                                    clearInterval(timer2);
+                                }
+                            }, 10);
                             clearInterval(timer);
                         }
                     }, 10);
