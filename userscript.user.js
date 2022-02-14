@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.10
+// @version      1.11
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.min.js
@@ -14,7 +14,11 @@
 // Change the threshold to match your desire, -1 will remove all ads.
 const threshold = 1000;
 
+// Change to false to switch back to Facebook's default behavior.
+const forceAllComment = true;
+
 /* Change Log
+1.11   - Force comment section to show all comments.
 1.10   - Update selector according to FB's changes.
 1.9.1  - Update unpkg url.
 1.9.0  - Auto remove ADs in the first 2 seconds after page load.
@@ -29,7 +33,7 @@ const threshold = 1000;
 const { fromEvent, interval, timer } = rxjs;
 const { throttleTime, takeUntil } = rxjs.operators;
 
-unsafeWindow.AD_Version = "1.10";
+unsafeWindow.AD_Version = "1.11";
 
 unsafeWindow.deletedPost = [];
 unsafeWindow.deletedPostOwner = [];
@@ -52,6 +56,27 @@ const deleteAd = () => {
         for (const a of list) {
             if (a.innerText === "贊助") return true;
         }
+
+        // force to show all comment
+        if (forceAllComment) {
+            const commentBtn = div.querySelectorAll("div[role='button'][tabindex='0'] > span[dir='auto']")[0];
+            if (commentBtn?.innerText.includes("留言")) {
+                const d = div;
+                commentBtn.onclick = () => {
+                    const timer = setInterval(() => {
+                        const selectBtn = [...d.querySelectorAll("div[role='button'][tabindex='0'] > span[dir='auto']")].find(e => e.innerText.includes("最相關"))
+                        if (selectBtn) {
+                            selectBtn.click();
+                            setTimeout(() => {
+                                document.querySelectorAll("div[tabindex='-1'] div[aria-hidden='false'] div[role='menuitem']")[2].click();
+                            }, 0);
+                            clearInterval(timer);
+                        }
+                    }, 10);
+                };
+            }
+        }
+
         return false;
     }).forEach(div => {
         const socialNum = Math.max(...[...div.querySelectorAll("div[role='button'] > span")].map(e => parseInt(e.innerText)).filter(n => isFinite(n)));
