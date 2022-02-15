@@ -8,9 +8,11 @@
 // @grant   GM_getValue
 // @grant   GM_setValue
 // @grant   GM_deleteValue
+// @description  Remove Facebook ads, currently only works for Traditional Chinese.
 // ==/UserScript==
 
-// Gist Url: https://gist.github.com/stanley2058/970e49b0d2295be290d5793e367c46fc
+// GitHub Repo: https://github.com/stanley2058/RemoveFacebookAds-ZH
+// Direct Link: https://github.com/stanley2058/RemoveFacebookAds-ZH/raw/main/userscript.user.js
 // Change the threshold to match your desire, -1 will remove all ads.
 const threshold = 1000;
 
