@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.11
+// @version      1.12
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.min.js
@@ -20,6 +20,7 @@ const threshold = 1000;
 const forceAllComment = true;
 
 /* Change Log
+1.12   - Fix accordingly to Facebook's spoofing change.
 1.11   - Force comment section to show all comments.
 1.10   - Update selector according to FB's changes.
 1.9.1  - Update unpkg url.
@@ -35,7 +36,7 @@ const forceAllComment = true;
 const { fromEvent, interval, timer } = rxjs;
 const { throttleTime, takeUntil } = rxjs.operators;
 
-unsafeWindow.AD_Version = "1.11";
+unsafeWindow.AD_Version = "1.12";
 
 unsafeWindow.deletedPost = [];
 unsafeWindow.deletedPostOwner = [];
@@ -53,11 +54,9 @@ unsafeWindow.AD_Block = (name) => {
 }
 
 const deleteAd = () => {
-    [...document.querySelector('div').querySelectorAll('div[role="article"]')].filter(div => {
-        const list = [...div.querySelectorAll("a[role='link']")];
-        for (const a of list) {
-            if (a.innerText === "贊助") return true;
-        }
+    [...document.querySelectorAll("div[role='feed'] > div")].filter(div => {
+        const texts = [...div.querySelectorAll("a[role='link']")].map(a => a.innerText.replace(/[\n\\n\w]/g, ""));
+        if (texts.find(t => t.startsWith("贊助"))) return true;
 
         // force to show all comment
         if (forceAllComment) {
@@ -99,8 +98,8 @@ const deleteAd = () => {
         }
     });
 
-    const sponser_div = document.querySelectorAll("div[data-pagelet='RightRail'] > div")[0];
-    if (sponser_div.innerText.includes("贊助")) sponser_div.innerHTML = "";
+    const sponser_div = document.querySelector("#ssrb_rhc_start + div span");
+    sponser_div.innerHTML = "";
 }
 
 fromEvent(window, 'scroll').pipe(throttleTime(300)).subscribe(next => deleteAd());
