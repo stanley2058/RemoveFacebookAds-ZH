@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.12
+// @version      1.12.1
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.min.js
@@ -20,6 +20,7 @@ const threshold = 1000;
 const forceAllComment = true;
 
 /* Change Log
+1.12.1 - Follow up patch due to Facebook's additional spoofing. Go F yourself FB.
 1.12   - Fix accordingly to Facebook's spoofing change.
 1.11   - Force comment section to show all comments.
 1.10   - Update selector according to FB's changes.
@@ -36,7 +37,7 @@ const forceAllComment = true;
 const { fromEvent, interval, timer } = rxjs;
 const { throttleTime, takeUntil } = rxjs.operators;
 
-unsafeWindow.AD_Version = "1.12";
+unsafeWindow.AD_Version = "1.12.1";
 
 unsafeWindow.deletedPost = [];
 unsafeWindow.deletedPostOwner = [];
@@ -55,8 +56,13 @@ unsafeWindow.AD_Block = (name) => {
 
 const deleteAd = () => {
     [...document.querySelectorAll("div[role='feed'] > div")].filter(div => {
-        const texts = [...div.querySelectorAll("a[role='link']")].map(a => a.innerText.replace(/[\n\\n\w]/g, ""));
-        if (texts.find(t => t.startsWith("贊助"))) return true;
+        const spoofSpans = [...div.querySelectorAll("a[role='link'] span[style]")];
+        const isSponser = spoofSpans.filter(s => getComputedStyle(s).display === "block" && s.style.position !== "absolute")
+            .sort(s => parseInt(s.style.order))
+            .map(s => s.innerText)
+            .join("")
+            .includes("贊助");
+        if (isSponser) return isSponser;
 
         // force to show all comment
         if (forceAllComment) {
