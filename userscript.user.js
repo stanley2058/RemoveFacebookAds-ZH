@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.12.2
+// @version      1.12.3
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.min.js
@@ -20,6 +20,7 @@ const threshold = 1000;
 const forceAllComment = true;
 
 /* Change Log
+1.12.3 - Fix to counter spoofing container changed to div.
 1.12.2 - Additional follow up fix.
 1.12.1 - Follow up patch due to Facebook's additional spoofing. Go F yourself FB.
 1.12   - Fix accordingly to Facebook's spoofing change.
@@ -57,7 +58,7 @@ unsafeWindow.AD_Block = (name) => {
 
 const deleteAd = () => {
     [...document.querySelectorAll("div[role='feed'] > div")].filter(div => {
-        const spoofSpans = [...div.querySelectorAll("a[role='link'] span[style]")];
+        const spoofSpans = [...div.querySelectorAll("a[role='link'] *[style]")];
         const texts = spoofSpans
         	.filter(s => getComputedStyle(s).display === "block" && s.style.position !== "absolute")
             .sort(s => parseInt(s.style.order))
