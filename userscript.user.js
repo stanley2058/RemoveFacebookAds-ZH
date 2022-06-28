@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.12.3
+// @version      1.13
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.min.js
@@ -15,11 +15,10 @@
 // Direct Link: https://github.com/stanley2058/RemoveFacebookAds-ZH/raw/main/userscript.user.js
 // Change the threshold to match your desire, -1 will remove all ads.
 const threshold = 1000;
-
-// Change to false to switch back to Facebook's default behavior.
-const forceAllComment = true;
+const lookBack = 15;
 
 /* Change Log
+1.13   - Improve process time and accuracy, remove force all comment.
 1.12.3 - Fix to counter spoofing container changed to div.
 1.12.2 - Additional follow up fix.
 1.12.1 - Follow up patch due to Facebook's additional spoofing. Go F yourself FB.
@@ -28,7 +27,7 @@ const forceAllComment = true;
 1.10   - Update selector according to FB's changes.
 1.9.1  - Update unpkg url.
 1.9.0  - Auto remove ADs in the first 2 seconds after page load.
-1.8    - Remove top right sponser div.
+1.8    - Remove top right sponsor div.
 1.7    - Fix for new FB UI.
 1.6    - Fix FB localStorage getting clear.
 1.5    - Add block button, help msg, AD origin highlight.
@@ -39,7 +38,7 @@ const forceAllComment = true;
 const { fromEvent, interval, timer } = rxjs;
 const { throttleTime, takeUntil } = rxjs.operators;
 
-unsafeWindow.AD_Version = "1.12.1";
+unsafeWindow.AD_Version = "1.13";
 
 unsafeWindow.deletedPost = [];
 unsafeWindow.deletedPostOwner = [];
@@ -47,97 +46,125 @@ unsafeWindow.deletedPostOwner = [];
 let blockList = [];
 
 (() => {
-    const item = GM_getValue("AD_BlockList", null);
-    if (item) blockList = JSON.parse(item);
+  const item = GM_getValue("AD_BlockList", null);
+  if (item) blockList = JSON.parse(item);
 })();
 
 unsafeWindow.AD_Block = (name) => {
-    blockList.push(name);
-    GM_setValue("AD_BlockList", JSON.stringify(blockList));
-}
+  blockList.push(name);
+  GM_setValue("AD_BlockList", JSON.stringify(blockList));
+};
 
 const deleteAd = () => {
-    [...document.querySelectorAll("div[role='feed'] > div")].filter(div => {
-        const spoofSpans = [...div.querySelectorAll("a[role='link'] *[style]")];
-        const texts = spoofSpans
-        	.filter(s => getComputedStyle(s).display === "block" && s.style.position !== "absolute")
-            .sort(s => parseInt(s.style.order))
-            .map(s => s.innerText);
-		const set = new Set(texts);
-		const isSponser = set.has("贊") && set.has("助");
-        if (isSponser) return isSponser;
+  const feed = [...document.querySelectorAll("div[role='feed'] > div")];
+  const start = feed.length > lookBack ? feed.length - lookBack : 0;
+  feed.slice(start, feed.length).forEach((div) => {
+    const spoofs = [...div.querySelectorAll("a[role='link'] *[style]")];
+    const matched = spoofs
+      .filter(
+        (s) =>
+          getComputedStyle(s).display === "block" &&
+          getComputedStyle(s).width !== "auto" &&
+          s.style.position !== "absolute" &&
+          Number.isFinite(parseInt(s.style.order)) &&
+          s.innerText.trim()
+      )
+      .sort((a, b) => parseInt(a.style.order) - parseInt(b.style.order));
+    const texts = matched.map((s) => s.innerText);
+    const set = new Set(texts);
+    const isSponsor = set.has("贊") && set.has("助");
 
-        // force to show all comment
-        if (forceAllComment) {
-            const commentBtn = div.querySelectorAll("div[role='button'][tabindex='0'] > span[dir='auto']")[0];
-            if (commentBtn?.innerText.includes("留言")) {
-                const d = div;
-                commentBtn.onclick = () => {
-                    const timer = setInterval(() => {
-                        const selectBtn = [...d.querySelectorAll("div[role='button'][tabindex='0'] > span[dir='auto']")].find(e => e.innerText.includes("最相關"))
-                        if (selectBtn) {
-                            selectBtn.click();
-                            const timer2 = setInterval(() => {
-                                const allCommentBtn = [...document.querySelectorAll("div[tabindex='-1'] div[aria-hidden='false'] div[role='menuitem']")][2];
-                                if (allCommentBtn) {
-                                    allCommentBtn.click();
-                                    clearInterval(timer2);
-                                }
-                            }, 10);
-                            clearInterval(timer);
-                        }
-                    }, 10);
-                };
-            }
-        }
+    if (!isSponsor) return;
 
-        return false;
-    }).forEach(div => {
-        const socialNum = Math.max(...[...div.querySelectorAll("div[role='button'] > span")].map(e => parseInt(e.innerText)).filter(n => isFinite(n)));
-        const name = div.querySelector('h4 a').innerText;
-        if (threshold === -1 || isNaN(socialNum) || socialNum < threshold || blockList.includes(name)) {
-            unsafeWindow.deletedPost.push(div.innerHTML);
-            unsafeWindow.deletedPostOwner.push({name, url: div.querySelector('h4 a').href});
-            div.innerHTML = '';
-        } else {
-            if (!div.querySelector('button[name="blockBtn"]')) {
-                div.querySelector("h4 a").style.backgroundColor = "orangered";
-                div.querySelector('h4').innerHTML += `<button name='blockBtn' style='position:absolute;right:50px;background-color:wheat;color:navy;' onclick="AD_Block('${name}')">Block</button>`;
-            }
-        }
-    });
+    const socialNum = Math.max(
+      ...[...div.querySelectorAll("div[role='button'] > span")]
+        .map((e) => parseInt(e.innerText))
+        .filter((n) => isFinite(n))
+    );
+    const name = div.querySelector("h4 a").innerText;
+    if (
+      threshold === -1 ||
+      isNaN(socialNum) ||
+      socialNum < threshold ||
+      blockList.includes(name)
+    ) {
+      unsafeWindow.deletedPost.push(div.innerHTML);
+      unsafeWindow.deletedPostOwner.push({
+        name,
+        url: div.querySelector("h4 a").href,
+      });
+      div.innerHTML = "";
+    } else {
+      if (!div.querySelector('button[name="blockBtn"]')) {
+        div.querySelector("h4 a").style.backgroundColor = "orangered";
+        div.querySelector(
+          "h4"
+        ).innerHTML += `<button name='blockBtn' style='position:absolute;right:50px;background-color:wheat;color:navy;' onclick="AD_Block('${name}')">Block</button>`;
+      }
+    }
+  });
 
-    const sponser_div = document.querySelector("#ssrb_rhc_start + div span");
-    sponser_div.innerHTML = "";
-}
+  const sponsorDiv = document.querySelector("#ssrb_rhc_start + div span");
+  sponsorDiv.innerHTML = "";
+};
 
-fromEvent(window, 'scroll').pipe(throttleTime(300)).subscribe(next => deleteAd());
-interval(50).pipe(takeUntil(timer(2000))).subscribe(next => deleteAd());
+fromEvent(window, "scroll")
+  .pipe(throttleTime(300))
+  .subscribe((next) => deleteAd());
 
 unsafeWindow.AD_Help = () => {
-    console.log('%cFacebook AD Post Blocker', 'color: yellow; background-color: navy; font-size: 24pt;');
-    console.log(`%cCurrent Version: ${AD_Version}`, 'color: cyan; background-color: navy; font-size: 12pt;');
-    console.log('%cCheck Update: https://gist.github.com/stanley2058/970e49b0d2295be290d5793e367c46fc', 'color: cyan; background-color: navy; font-size: 12pt;');
-    console.log('%cOptions:', 'color: greenyellow; background-color: navy; font-size: 18pt;');
-    console.log('1. AD_ShowDeletedPosts() | Show deleted post origin')
-    console.log('2. AD_ShowFullPostByIndex(index) | Show full html detail of certain deleted post')
-    console.log('3. AD_ClearBlockList() | Clear the block list')
-    console.log('4. AD_UnBlock(name) | Unblock post from certain origin')
-    console.log()
-    console.log("%cCurrent Blocked:", "color: greenyellow; background-color: navy; font-size: 16pt;")
-    console.log(blockList)
-}
+  console.log(
+    "%cFacebook AD Post Blocker",
+    "color: yellow; background-color: navy; font-size: 24pt;"
+  );
+  console.log(
+    `%cCurrent Version: ${AD_Version}`,
+    "color: cyan; background-color: navy; font-size: 12pt;"
+  );
+  console.log(
+    "%cCheck Update: https://github.com/stanley2058/RemoveFacebookAds-ZH/raw/main/userscript.user.js",
+    "color: cyan; background-color: navy; font-size: 12pt;"
+  );
+  console.log(
+    "%cOptions:",
+    "color: greenyellow; background-color: navy; font-size: 18pt;"
+  );
+  console.table([
+    {
+      method: "AD_ShowDeletedPosts()",
+      description: "Show deleted post origin",
+    },
+    {
+      method: "AD_ShowFullPostByIndex(index)",
+      description: "Show full html detail of certain deleted post",
+    },
+    { method: "AD_ClearBlockList()", description: "Clear the block list" },
+    {
+      method: "AD_UnBlock(name)",
+      description: "Unblock post from certain origin",
+    },
+  ]);
+  console.log(
+    "%cCurrent Blocked:",
+    "color: greenyellow; background-color: navy; font-size: 16pt;"
+  );
+  console.log(blockList);
+};
 
 unsafeWindow.AD_ShowDeletedPosts = () => {
-    for (let i = 0; i < unsafeWindow.deletedPostOwner.length; ++i) console.log(`${i}: ${unsafeWindow.deletedPostOwner[i].name}\n${unsafeWindow.deletedPostOwner[i].url}`);
-}
+  for (let i = 0; i < unsafeWindow.deletedPostOwner.length; ++i) {
+    console.log(
+      `${i}: ${unsafeWindow.deletedPostOwner[i].name}\n${unsafeWindow.deletedPostOwner[i].url}`
+    );
+  }
+};
 unsafeWindow.AD_ShowFullPostByIndex = (index) => {
-    console.log(unsafeWindow.deletedPost[index]);
-}
+  console.log(unsafeWindow.deletedPost[index]);
+};
 unsafeWindow.AD_ClearBlockList = () => {
-    GM_deleteValue('AD_BlockList');
-}
+  GM_deleteValue("AD_BlockList");
+};
 unsafeWindow.AD_UnBlock = (name) => {
-    blockList = blockList.filter(n => n !== name);
-    GM_setValue("AD_BlockList", JSON.stringify(blockList));
-}
+  blockList = blockList.filter((n) => n !== name);
+  GM_setValue("AD_BlockList", JSON.stringify(blockList));
+};
