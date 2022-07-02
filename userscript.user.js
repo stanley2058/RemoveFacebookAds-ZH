@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.13
+// @version      1.13.1
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.min.js
@@ -18,6 +18,7 @@ const threshold = 1000;
 const lookBack = 15;
 
 /* Change Log
+1.13.1 - Usual fixes because FB change the CSS structure.
 1.13   - Improve process time and accuracy, remove force all comment.
 1.12.3 - Fix to counter spoofing container changed to div.
 1.12.2 - Additional follow up fix.
@@ -38,7 +39,7 @@ const lookBack = 15;
 const { fromEvent, interval, timer } = rxjs;
 const { throttleTime, takeUntil } = rxjs.operators;
 
-unsafeWindow.AD_Version = "1.13";
+unsafeWindow.AD_Version = "1.13.1";
 
 unsafeWindow.deletedPost = [];
 unsafeWindow.deletedPostOwner = [];
@@ -59,18 +60,13 @@ const deleteAd = () => {
   const feed = [...document.querySelectorAll("div[role='feed'] > div")];
   const start = feed.length > lookBack ? feed.length - lookBack : 0;
   feed.slice(start, feed.length).forEach((div) => {
-    const spoofs = [...div.querySelectorAll("a[role='link'] *[style]")];
+    const spoofs = [...div.querySelectorAll("a[role='link'] *[style*='display: flex;'] *:not([style*='position: absolute;'])")];
     const matched = spoofs
-      .filter(
-        (s) =>
+      .filter((s) =>
           getComputedStyle(s).display === "block" &&
-          getComputedStyle(s).width !== "auto" &&
-          s.style.position !== "absolute" &&
-          Number.isFinite(parseInt(s.style.order)) &&
-          s.innerText.trim()
-      )
-      .sort((a, b) => parseInt(a.style.order) - parseInt(b.style.order));
-    const texts = matched.map((s) => s.innerText);
+          getComputedStyle(s).width !== "auto")
+      .sort((a, b) => parseInt(getComputedStyle(a).order) - parseInt(getComputedStyle(b).order));
+    const texts = matched.flatMap((s) => (s.innerText || "").split(""));
     const set = new Set(texts);
     const isSponsor = set.has("贊") && set.has("助");
 
