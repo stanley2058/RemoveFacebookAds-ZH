@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.13.1
+// @version      1.13.2
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.min.js
@@ -14,10 +14,11 @@
 // GitHub Repo: https://github.com/stanley2058/RemoveFacebookAds-ZH
 // Direct Link: https://github.com/stanley2058/RemoveFacebookAds-ZH/raw/main/userscript.user.js
 // Change the threshold to match your desire, -1 will remove all ads.
-const threshold = 1000;
+const threshold = 10000;
 const lookBack = 15;
 
 /* Change Log
+1.13.2 - Fix because FB stupidly added a span wrapper for the feed.
 1.13.1 - Usual fixes because FB change the CSS structure.
 1.13   - Improve process time and accuracy, remove force all comment.
 1.12.3 - Fix to counter spoofing container changed to div.
@@ -39,7 +40,7 @@ const lookBack = 15;
 const { fromEvent, interval, timer } = rxjs;
 const { throttleTime, takeUntil } = rxjs.operators;
 
-unsafeWindow.AD_Version = "1.13.1";
+unsafeWindow.AD_Version = "1.13.2";
 
 unsafeWindow.deletedPost = [];
 unsafeWindow.deletedPostOwner = [];
@@ -57,7 +58,7 @@ unsafeWindow.AD_Block = (name) => {
 };
 
 const deleteAd = () => {
-  const feed = [...document.querySelectorAll("div[role='feed'] > div")];
+  const feed = [...document.querySelectorAll("div[role='feed'] > *")];
   const start = feed.length > lookBack ? feed.length - lookBack : 0;
   feed.slice(start, feed.length).forEach((div) => {
     const spoofs = [...div.querySelectorAll("a[role='link'] *[style*='display: flex;'] *:not([style*='position: absolute;'])")];
