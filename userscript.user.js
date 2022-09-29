@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.13.2
+// @version      1.14
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.min.js
@@ -18,6 +18,7 @@ const threshold = 10000;
 const lookBack = 15;
 
 /* Change Log
+1.14   - Fix due to FB's changes (they move the sponsor text into a svg).
 1.13.2 - Fix because FB stupidly added a span wrapper for the feed.
 1.13.1 - Usual fixes because FB change the CSS structure.
 1.13   - Improve process time and accuracy, remove force all comment.
@@ -40,7 +41,7 @@ const lookBack = 15;
 const { fromEvent, interval, timer } = rxjs;
 const { throttleTime, takeUntil } = rxjs.operators;
 
-unsafeWindow.AD_Version = "1.13.2";
+unsafeWindow.AD_Version = "1.14";
 
 unsafeWindow.deletedPost = [];
 unsafeWindow.deletedPostOwner = [];
@@ -58,16 +59,14 @@ unsafeWindow.AD_Block = (name) => {
 };
 
 const deleteAd = () => {
-  const feed = [...document.querySelectorAll("div[role='feed'] > *")];
+  const feed = [...document.querySelectorAll("#ssrb_feed_start+div > div")];
   const start = feed.length > lookBack ? feed.length - lookBack : 0;
   feed.slice(start, feed.length).forEach((div) => {
-    const spoofs = [...div.querySelectorAll("a[role='link'] *[style*='display: flex;'] *:not([style*='position: absolute;'])")];
-    const matched = spoofs
-      .filter((s) =>
-          getComputedStyle(s).display === "block" &&
-          getComputedStyle(s).width !== "auto")
-      .sort((a, b) => parseInt(getComputedStyle(a).order) - parseInt(getComputedStyle(b).order));
-    const texts = matched.flatMap((s) => (s.innerText || "").split(""));
+    const useLayer = div.querySelector("svg use");
+    if (!useLayer) return;
+    const id = useLayer.getAttribute("xlink:href").substring(1);
+    const texts = document.getElementById(id)?.innerHTML || "";
+
     const set = new Set(texts);
     const isSponsor = set.has("贊") && set.has("助");
 
