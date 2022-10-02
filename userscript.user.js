@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.14
+// @version      1.14.1
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.min.js
@@ -18,6 +18,7 @@ const threshold = 10000;
 const lookBack = 15;
 
 /* Change Log
+1.14.1 - Fix feed selector due to FB's minor changes.
 1.14   - Fix due to FB's changes (they move the sponsor text into a svg).
 1.13.2 - Fix because FB stupidly added a span wrapper for the feed.
 1.13.1 - Usual fixes because FB change the CSS structure.
@@ -41,7 +42,7 @@ const lookBack = 15;
 const { fromEvent, interval, timer } = rxjs;
 const { throttleTime, takeUntil } = rxjs.operators;
 
-unsafeWindow.AD_Version = "1.14";
+unsafeWindow.AD_Version = "1.14.1";
 
 unsafeWindow.deletedPost = [];
 unsafeWindow.deletedPostOwner = [];
@@ -59,13 +60,12 @@ unsafeWindow.AD_Block = (name) => {
 };
 
 const deleteAd = () => {
-  const feed = [...document.querySelectorAll("#ssrb_feed_start+div > div")];
+  const feed = [...document.querySelector("#ssrb_feed_start+div h3").parentNode.childNodes].filter(n => n.nodeName === "DIV");
   const start = feed.length > lookBack ? feed.length - lookBack : 0;
   feed.slice(start, feed.length).forEach((div) => {
     const useLayer = div.querySelector("svg use");
     if (!useLayer) return;
-    const id = useLayer.getAttribute("xlink:href").substring(1);
-    const texts = document.getElementById(id)?.innerHTML || "";
+    const texts = document.querySelector(useLayer.getAttribute("xlink:href") || "")?.innerHTML || "";
 
     const set = new Set(texts);
     const isSponsor = set.has("贊") && set.has("助");
