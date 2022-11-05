@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.14.2
+// @version      1.14.3
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.min.js
@@ -18,6 +18,7 @@ const threshold = 10000;
 const lookBack = 15;
 
 /* Change Log
+1.14.3 - Fix feed selector again.
 1.14.2 - Change AD deletion method.
 1.14.1 - Fix feed selector due to FB's minor changes.
 1.14   - Fix due to FB's changes (they move the sponsor text into a svg).
@@ -43,7 +44,7 @@ const lookBack = 15;
 const { fromEvent, interval, timer } = rxjs;
 const { throttleTime, takeUntil } = rxjs.operators;
 
-unsafeWindow.AD_Version = "1.14.2";
+unsafeWindow.AD_Version = "1.14.3";
 
 unsafeWindow.deletedPost = [];
 unsafeWindow.deletedPostOwner = [];
@@ -65,17 +66,13 @@ const deleteAd = () => {
   const sponsorDiv = document.querySelector("#ssrb_rhc_start + div span");
   sponsorDiv.innerHTML = "";
 
-  const feed = [
-    ...document.querySelector("#ssrb_feed_start+div h3").parentNode.childNodes,
-  ].filter((n) => n.nodeName === "DIV");
+  const feed = Array.from(document.querySelectorAll("#ssrb_feed_start+div h3+div > div"));
   if (feed.length === 0) return;
   const start = feed.length > lookBack ? feed.length - lookBack : 0;
   feed.slice(start, feed.length).forEach((div) => {
     const useLayer = div.querySelector("svg use");
     if (!useLayer) return;
-    const texts =
-      document.querySelector(useLayer.getAttribute("xlink:href") || "")
-        ?.innerHTML || "";
+    const texts = document.querySelector(useLayer.getAttribute("xlink:href") || "")?.innerHTML || "";
 
     const set = new Set(texts);
     const isSponsor = set.has("贊") && set.has("助");
@@ -102,6 +99,7 @@ const deleteAd = () => {
 
       // delete post
       div.style.display = "none";
+
     } else {
       if (!div.querySelector('button[name="blockBtn"]')) {
         div.querySelector("h4 a").style.backgroundColor = "orangered";
@@ -113,7 +111,9 @@ const deleteAd = () => {
   });
 };
 
-fromEvent(window, "scroll").pipe(throttleTime(300)).subscribe(deleteAd);
+fromEvent(window, "scroll")
+  .pipe(throttleTime(300))
+  .subscribe(deleteAd);
 
 unsafeWindow.AD_Help = () => {
   console.log(
