@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.14.3
+// @version      1.14.4
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.min.js
@@ -18,6 +18,7 @@ const threshold = 10000;
 const lookBack = 15;
 
 /* Change Log
+1.14.4 - Fix feed selector.
 1.14.3 - Fix feed selector again.
 1.14.2 - Change AD deletion method.
 1.14.1 - Fix feed selector due to FB's minor changes.
@@ -44,7 +45,7 @@ const lookBack = 15;
 const { fromEvent, interval, timer } = rxjs;
 const { throttleTime, takeUntil } = rxjs.operators;
 
-unsafeWindow.AD_Version = "1.14.3";
+unsafeWindow.AD_Version = "1.14.4";
 
 unsafeWindow.deletedPost = [];
 unsafeWindow.deletedPostOwner = [];
@@ -64,9 +65,9 @@ unsafeWindow.AD_Block = (name) => {
 const deleteAd = () => {
   // delete top right ad
   const sponsorDiv = document.querySelector("#ssrb_rhc_start + div span");
-  sponsorDiv.innerHTML = "";
+  if (sponsorDiv) sponsorDiv.innerHTML = "";
 
-  const feed = Array.from(document.querySelectorAll("#ssrb_feed_start+div h3+div > div"));
+  const feed = Array.from(document.querySelectorAll("h3[dir='auto']+div > div"));
   if (feed.length === 0) return;
   const start = feed.length > lookBack ? feed.length - lookBack : 0;
   feed.slice(start, feed.length).forEach((div) => {
