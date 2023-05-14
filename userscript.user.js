@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.14.4
+// @version      1.15
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.min.js
 // @icon         https://www.google.com/s2/favicons?domain=facebook.com.tw
-// @grant   GM_getValue
-// @grant   GM_setValue
-// @grant   GM_deleteValue
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_deleteValue
 // @description  Remove Facebook ads, currently only works for Traditional Chinese.
 // ==/UserScript==
 
@@ -17,7 +17,15 @@
 const threshold = 10000;
 const lookBack = 15;
 
+const sponsorIdentifiers = ["贊", "助"];
+const commentIdentifiers = {
+    comment: "留言",
+    mostRelated: "最相關",
+    allComment: "所有留言"
+};
+
 /* Change Log
+1.15   - Force all comment is back now!
 1.14.4 - Fix feed selector.
 1.14.3 - Fix feed selector again.
 1.14.2 - Change AD deletion method.
@@ -42,10 +50,10 @@ const lookBack = 15;
 1.3    - Use rxjs to reduce resource usage while idle.
 */
 
-const { fromEvent, interval, timer } = rxjs;
-const { throttleTime, takeUntil } = rxjs.operators;
+const { fromEvent, interval } = rxjs;
+const { throttleTime } = rxjs.operators;
 
-unsafeWindow.AD_Version = "1.14.4";
+unsafeWindow.AD_Version = "1.15";
 
 unsafeWindow.deletedPost = [];
 unsafeWindow.deletedPostOwner = [];
@@ -76,7 +84,7 @@ const deleteAd = () => {
     const texts = document.querySelector(useLayer.getAttribute("xlink:href") || "")?.innerHTML || "";
 
     const set = new Set(texts);
-    const isSponsor = set.has("贊") && set.has("助");
+    const isSponsor = sponsorIdentifiers.every(i => set.has(i));
 
     if (!isSponsor) return;
 
@@ -112,9 +120,24 @@ const deleteAd = () => {
   });
 };
 
+const forceAllComment = () => {
+    const dropMenu = Array.from(document.querySelectorAll('h3[dir="auto"],h2[dir="auto"]'))
+        .filter(h => h.innerText === commentIdentifiers.comment)
+        .flatMap(h => Array.from(h.parentElement.querySelectorAll('div[role="button"]')))
+            .find(e => e.innerText.includes(commentIdentifiers.mostRelated));
+    if (!dropMenu) return;
+    dropMenu.click();
+    setTimeout(() => {
+        Array.from(document.querySelectorAll('div[role="menuitem"]'))
+            .find(e => e.innerText.startsWith(commentIdentifiers.allComment))?.click();
+    }, 1)
+}
+
 fromEvent(window, "scroll")
   .pipe(throttleTime(300))
   .subscribe(deleteAd);
+
+interval(200).subscribe(forceAllComment);
 
 unsafeWindow.AD_Help = () => {
   console.log(
