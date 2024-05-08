@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.15
+// @version      1.16
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.min.js
@@ -25,6 +25,7 @@ const commentIdentifiers = {
 };
 
 /* Change Log
+1.16   - Update post selector. Remove delete button.
 1.15   - Force all comment is back now!
 1.14.4 - Fix feed selector.
 1.14.3 - Fix feed selector again.
@@ -53,7 +54,7 @@ const commentIdentifiers = {
 const { fromEvent, interval } = rxjs;
 const { throttleTime } = rxjs.operators;
 
-unsafeWindow.AD_Version = "1.15";
+unsafeWindow.AD_Version = "1.16";
 
 unsafeWindow.deletedPost = [];
 unsafeWindow.deletedPostOwner = [];
@@ -75,7 +76,7 @@ const deleteAd = () => {
   const sponsorDiv = document.querySelector("#ssrb_rhc_start + div span");
   if (sponsorDiv) sponsorDiv.innerHTML = "";
 
-  const feed = Array.from(document.querySelectorAll("h3[dir='auto']+div > div"));
+  const feed = Array.from(document.querySelectorAll("div:not(.html-div):not([class]):has(> div.html-div)"));
   if (feed.length === 0) return;
   const start = feed.length > lookBack ? feed.length - lookBack : 0;
   feed.slice(start, feed.length).forEach((div) => {
@@ -108,14 +109,6 @@ const deleteAd = () => {
 
       // delete post
       div.style.display = "none";
-
-    } else {
-      if (!div.querySelector('button[name="blockBtn"]')) {
-        div.querySelector("h4 a").style.backgroundColor = "orangered";
-        div.querySelector(
-          "h4"
-        ).innerHTML += `<button name='blockBtn' style='position:absolute;right:50px;background-color:wheat;color:navy;' onclick="AD_Block('${name}')">Block</button>`;
-      }
     }
   });
 };
