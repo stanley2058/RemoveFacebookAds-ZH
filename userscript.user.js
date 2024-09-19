@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.17.1
+// @version      1.17.2
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.min.js
@@ -15,7 +15,7 @@
 // Direct Link: https://github.com/stanley2058/RemoveFacebookAds-ZH/raw/main/userscript.user.js
 // Change the threshold to match your desire, -1 will remove all ads.
 
-unsafeWindow.AD_Version = "1.17.1";
+unsafeWindow.AD_Version = "1.17.2";
 
 const threshold = 10000;
 const lookBack = 15;
@@ -31,6 +31,7 @@ const commentIdentifiers = {
 };
 
 /* Change Log
+1.17.2 - Fix index error in canvas comparsion.
 1.17.1 - Fix canvas rendering.
 1.17   - Implement canvas sponsor text detection.
 1.16   - Update post selector. Remove delete button.
@@ -92,8 +93,7 @@ const deleteAd = () => {
   feed.slice(start, feed.length).forEach((div) => {
     // canvas method
     const canvas = div.querySelector("canvas");
-    const canvasSponsor =
-      (canvas && canvasSimilar(createEqCanvas(canvas), canvas)) || false;
+    const canvasSponsor = checkCanvasSponsor(canvas);
 
     // svg method
     const useLayer = div.querySelector("svg use");
@@ -151,20 +151,33 @@ const forceAllComment = () => {
   }, 1);
 };
 
+function checkCanvasSponsor(canvas) {
+  if (!canvas) return false
+  try {
+    return canvasSimilar(createEqCanvas(canvas), canvas);
+  } catch (e) {
+    console.error(e);
+    return false;
+  }
+}
+
 function createEqCanvas(
   c,
-  text = canvasSponsorIdentifiers,
   fontSize = canvasFontSize,
+  text = canvasSponsorIdentifiers,
 ) {
   const ctxCmp = c.getContext("2d");
   const canvas = document.createElement("canvas");
   canvas.width = c.width;
   canvas.height = c.height;
+  for (const key of Object.values(c.style)) {
+      canvas.style[key] = c.style[key];
+  }
   const ctx = canvas.getContext("2d");
   ctx.font = `${fontSize}px Helvetica, Arial, sans-serif`;
   ctx.fillStyle = ctxCmp.fillStyle;
   ctx.textBaseline = ctxCmp.textBaseline;
-  ctx.fillText(text, 3, canvasFontSize / 2 - 6);
+  ctx.fillText(text, 0, canvasFontSize / 2 + 1);
   return canvas;
 }
 
@@ -176,8 +189,8 @@ function canvasSimilar(
   const ctx1 = canvas1.getContext("2d");
   const ctx2 = canvas2.getContext("2d");
 
-  const data1 = ctx1.getImageData(0, 0, canvas1.width, canvas1.height).data;
-  const data2 = ctx2.getImageData(0, 0, canvas2.width, canvas2.height).data;
+  const data1 = ctx1.getImageData(0, 0, canvas1.width - 1, canvas1.height - 1).data;
+  const data2 = ctx2.getImageData(0, 0, canvas2.width - 1, canvas2.height - 1).data;
 
   if (data1.length !== data2.length) return false;
   let mismatch = 0;
@@ -249,3 +262,13 @@ unsafeWindow.AD_UnBlock = (name) => {
   blockList = blockList.filter((n) => n !== name);
   GM_setValue("AD_BlockList", JSON.stringify(blockList));
 };
+
+// this is for debugging
+function downloadCanvas(canvas, filename = 'canvas.png') {
+	const img = canvas.toDataURL()
+	const a = document.createElement('a')
+	a.download = filename
+	a.href = img
+	a.click()
+}
+unsafeWindow.downloadCanvas = downloadCanvas
