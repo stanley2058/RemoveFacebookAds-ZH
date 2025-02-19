@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.17.2
+// @version      1.18
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.min.js
@@ -15,7 +15,7 @@
 // Direct Link: https://github.com/stanley2058/RemoveFacebookAds-ZH/raw/main/userscript.user.js
 // Change the threshold to match your desire, -1 will remove all ads.
 
-unsafeWindow.AD_Version = "1.17.2";
+unsafeWindow.AD_Version = "1.18";
 
 const threshold = 10000;
 const lookBack = 15;
@@ -31,6 +31,7 @@ const commentIdentifiers = {
 };
 
 /* Change Log
+1.18   - Bring back plain text sponsor detection.
 1.17.2 - Fix index error in canvas comparsion.
 1.17.1 - Fix canvas rendering.
 1.17   - Implement canvas sponsor text detection.
@@ -106,7 +107,16 @@ const deleteAd = () => {
       isSvgSponsor = sponsorIdentifiers.every((i) => set.has(i));
     }
 
-    const isSponsor = isSvgSponsor || canvasSponsor;
+    const spoofs = [...div.querySelectorAll("a[role='link'] *[style*='display: flex;'] *:not([style*='position: absolute;'])")];
+    const matched = spoofs
+      .filter((s) =>
+          getComputedStyle(s).display === "block" &&
+          getComputedStyle(s).width !== "auto")
+      .sort((a, b) => parseInt(getComputedStyle(a).order) - parseInt(getComputedStyle(b).order));
+    const textSet = new Set(matched.flatMap((s) => (s.innerText || "").split("")));
+    const isSpoofingTextSponsor = sponsorIdentifiers.every((i) => textSet.has(i));
+
+    const isSponsor = isSvgSponsor || canvasSponsor || isSpoofingTextSponsor;
     if (!isSponsor) return;
 
     const socialNum = Math.max(
