@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.18.1
+// @version      1.18.2
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.min.js
@@ -15,7 +15,7 @@
 // Direct Link: https://github.com/stanley2058/RemoveFacebookAds-ZH/raw/main/userscript.user.js
 // Change the threshold to match your desire, -1 will remove all ads.
 
-unsafeWindow.AD_Version = "1.18.1";
+unsafeWindow.AD_Version = "1.18.2";
 
 const threshold = 10000;
 const lookBack = 15;
@@ -31,9 +31,10 @@ const commentIdentifiers = {
 };
 
 /* Change Log
+1.18.2 - Fix possible undefined while finding top right AD block.
 1.18.1 - Update top right sponsor section selectors.
 1.18   - Bring back plain text sponsor detection.
-1.17.2 - Fix index error in canvas comparison.
+1.17.2 - Fix index error in canvas comparsion.
 1.17.1 - Fix canvas rendering.
 1.17   - Implement canvas sponsor text detection.
 1.16   - Update post selector. Remove delete button.
@@ -85,8 +86,8 @@ const deleteAd = () => {
   const sponsorDiv = document
     .querySelectorAll('div[role="complementary"] div[data-visualcompletion="ignore-dynamic"]:has(div[data-visualcompletion="ignore-dynamic"])')
     ?.[0]
-    .parentElement
-    .querySelector('div:not([data-visualcompletion="ignore-dynamic"])');
+    ?.parentElement
+    ?.querySelector('div:not([data-visualcompletion="ignore-dynamic"])');
   if (sponsorDiv) sponsorDiv.style.display = "none";
 
   const feed = Array.from(
