@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Remove Facebook Ad Posts
-// @version      1.18.2
+// @version      1.18.3
 // @author       STW
 // @match        https://www.facebook.com/*
 // @require      https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.min.js
@@ -15,10 +15,10 @@
 // Direct Link: https://github.com/stanley2058/RemoveFacebookAds-ZH/raw/main/userscript.user.js
 // Change the threshold to match your desire, -1 will remove all ads.
 
-unsafeWindow.AD_Version = "1.18.2";
+unsafeWindow.AD_Version = "1.18.3";
 
 const threshold = 10000;
-const lookBack = 15;
+const lookBack = 50;
 
 const sponsorIdentifiers = ["贊", "助"];
 const canvasSponsorIdentifiers = "贊助";
@@ -31,6 +31,7 @@ const commentIdentifiers = {
 };
 
 /* Change Log
+1.18.3 - Update selector to remove top right ads & increase lookback.
 1.18.2 - Fix possible undefined while finding top right AD block.
 1.18.1 - Update top right sponsor section selectors.
 1.18   - Bring back plain text sponsor detection.
@@ -84,10 +85,7 @@ unsafeWindow.AD_Block = (name) => {
 const deleteAd = () => {
   // delete top right ad
   const sponsorDiv = document
-    .querySelectorAll('div[role="complementary"] div[data-visualcompletion="ignore-dynamic"]:has(div[data-visualcompletion="ignore-dynamic"])')
-    ?.[0]
-    ?.parentElement
-    ?.querySelector('div:not([data-visualcompletion="ignore-dynamic"])');
+    .querySelector('div[role="complementary"] div:not([data-visualcompletion]):has(h3):has(+ div[data-visualcompletion="ignore-dynamic"])');
   if (sponsorDiv) sponsorDiv.style.display = "none";
 
   const feed = Array.from(
